@@ -9,7 +9,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [apiKey, setApiKey] = useState("");
 
-  // fetch API key on mount
+  // fetch API key and popular movies on mount
   useEffect(() => {
     const fetchApiKeyAndMovies = async () => {
       try {
@@ -33,22 +33,34 @@ function Home() {
     fetchApiKeyAndMovies();
   }, []);
 
+  // Search movies from API
+  const searchMovies = async (query) => {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}`
+    );
+    const data = await response.json();
+    return data.results;
+  };
+
+  // Handle search form submit
   const handleSearch = async (e) => {
     e.preventDefault();
-    if(!searchQuery.trim()) return
-    if (loading) return
+    if (!searchQuery.trim() || loading) return;
 
-    setLoading(true)
-    try{    
-        const searchResults = await searchMovies(searchQuery)
-        setMovies(searchResults)
-        setError(null)
+    setLoading(true);
+    setMovies([]); // Clear current movies while searching
+
+    try {
+      const searchResults = await searchMovies(searchQuery);
+      setMovies(searchResults);
+      setError(null);
     } catch (err) {
-        console.log(err);
-        setError("Failed to search movie...")
+      console.error(err);
+      setError("Failed to search movie...");
     } finally {
-        setLoading(false)
+      setLoading(false);
     }
+
     setSearchQuery("");
   };
 
@@ -57,7 +69,7 @@ function Home() {
       <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"
-          placeholder="Search for movies ..."
+          placeholder="Search for movies..."
           className="search-input"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -73,13 +85,13 @@ function Home() {
         <p>{error}</p>
       ) : (
         <div className="movies-grid">
-          {movies
-            .filter((movie) =>
-              movie.title.toLowerCase().startsWith(searchQuery.toLowerCase())
-            )
-            .map((movie) => (
+          {movies.length > 0 ? (
+            movies.map((movie) => (
               <MovieCard movie={movie} key={movie.id} />
-            ))}
+            ))
+          ) : (
+            <p>No movies found.</p>
+          )}
         </div>
       )}
     </div>
